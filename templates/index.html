@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Newsletter Subscription API</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f6f8;
+        }
+        nav {
+            background-color: #1e293b;
+            padding: 15px;
+            padding-left: 5rem;
+            display: flex;
+            gap: 50px;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            padding: 30px;
+        }
+        .form {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-item: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        input[type="email"] {
+            padding: 10px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .subscriber {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 4px;
+        }
+        .unsubscribe-btn {
+            background-color: #dc2626;
+        }
+        .unsubscribe-btn:hover {
+            background-color: #b91c1c;
+        }
+        .message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a onclick="showHome()">Home</a>
+        <a onclick="showSubscribers()">Subscribers</a>
+    </nav>
+    <div class="container">
+        <div class="form">
+            <div id="homeSection">
+                <h2>Subscribe to Newsletter</h2>
+                <input type="email" id="emailInput" placeholder="Enter your email">
+                <button onclick="subscribe()">Click to Subscribe</button>
+                <div class="message" id="homeMessage"></div>
+            </div>
+        </div>
+        <div id="subscribersSection" style="display:none;">
+            <h2>Subscribed Emails</h2>
+            <div id="subscriberList"></div>
+        </div>
+    </div>
+    <script>
+        const BASE_URL = "http://127.0.0.1:5000";
+        function showHome() {
+            document.getElementById("homeSection").style.display = "block";
+            document.getElementById("subscribersSection").style.display = "none";
+        }
+
+        function showSubscribers() {
+            document.getElementById("homeSection").style.display = "none";
+            document.getElementById("subscribersSection").style.display = "block";
+            fetchSubscribers();
+        }
+        function subscribe() {
+            const email = document.getElementById("emailInput").value;
+            const message = document.getElementById("homeMessage");
+            fetch(`${BASE_URL}/subscribe`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+//                message.innerText = data.message || data.error;
+                message.innerText = data.message || data.error;
+                if (data.message === "add to database successfully") {
+                    email.value = "";
+                }
+            })
+            .catch(err => {
+                message.innerText = "Server error";
+            });
+            email.value = "";
+        }
+        function fetchSubscribers() {
+            fetch(`${BASE_URL}/subscribers`)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById("subscriberList");
+                list.innerHTML = "";
+                data.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "subscriber";
+                    div.innerHTML = `
+                        <span>${item.email}</span>
+                        <button class="unsubscribe-btn" onclick="unsubscribe('${item.email}')">
+                            Unsubscribe
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+        }
+        function unsubscribe(email) {
+            fetch(`${BASE_URL}/unsubscribe`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(() => {
+                fetchSubscribers();
+            });
+        }
+    </script>
+</body>
+</html>
