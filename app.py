@@ -49,6 +49,46 @@ def addEmail():
         cursor.close()
         connection.close()
 
+@app.route("/updateEmail", methods=["PUT"])
+def updateEmail():
+    data = request.get_json()
+
+    # 1. Validate input presence
+    if not data or "oldEmail" not in data or "newEmail" not in data:
+        return jsonify({"error": "oldEmail and newEmail are required"}), 400
+
+    old_email = data["oldEmail"].strip().lower()
+    new_email = data["newEmail"].strip().lower()
+
+    # 2. Validate new email format
+    if not is_valid_email(new_email):
+        return jsonify({"error": "Invalid new email format"}), 400
+
+    connection = DB_Connection()
+    cursor = connection.cursor()
+
+    try:
+        # 3. Update email
+        cursor.execute(
+            "UPDATE subscribers SET email = %s WHERE email = %s",
+            (new_email, old_email)
+        )
+        connection.commit()
+
+        # 4. Check if old email existed
+        if cursor.rowcount == 0:
+            return jsonify({"message": "Old email not found"}), 404
+
+        return jsonify({"message": "Email updated successfully"}), 200
+
+    except mysql.connector.IntegrityError:
+        # Happens if newEmail already exists (UNIQUE constraint)
+        return jsonify({"error": "New email already exists"}), 409
+
+    finally:
+        cursor.close()
+        connection.close()
+
 @app.route("/unsubscribe", methods=["DELETE"])
 def deleteEmail():
     data = request.get_json()
